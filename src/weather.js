@@ -2,6 +2,26 @@
 const GEOCODING_URL = "https://geocoding-api.open-meteo.com/v1/search";
 const WEATHER_URL = "https://api.open-meteo.com/v1/forecast";
 
+// Make a request and handle connection problems
+async function fetchWithTimeout(url) {
+    try {
+        return await fetch(url, {
+            signal: AbortSignal.timeout(10000)
+        });
+
+    } catch (error) {
+        if (error.name === "TimeoutError") {
+            throw new Error("Request timed out. Please try again.");
+        }
+
+        if (error instanceof TypeError) {
+            throw new Error("Network error. Please check your internet connection.");
+        }
+
+        throw error;
+    }
+}
+
 // Convert a city name into coordinates
 async function getCoordinates(city) {
     const params = new URLSearchParams({
@@ -11,10 +31,9 @@ async function getCoordinates(city) {
         format: "json"
     });
 
-    const response = await fetch(
-        `${GEOCODING_URL}?${params}`,
-        { signal: AbortSignal.timeout(10000) }
-    );
+    const response = await fetchWithTimeout(
+    `${GEOCODING_URL}?${params}`
+);
 
     if (!response.ok) {
         throw new Error("Could not search for the city.");
@@ -47,10 +66,9 @@ export async function getWeather(city, days = 1, unit = "celsius") {
     forecast_days: String(days)
 });
 
-    const response = await fetch(
-        `${WEATHER_URL}?${params}`,
-        { signal: AbortSignal.timeout(10000) }
-    );
+    const response = await fetchWithTimeout(
+    `${WEATHER_URL}?${params}`
+);
 
     if (!response.ok) {
         throw new Error("Could not retrieve weather information.");

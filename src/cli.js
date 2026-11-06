@@ -167,7 +167,10 @@ export async function main() {
         throw new Error(`Unknown command: ${command}`);
 
     } catch (error) {
-        console.error("Error:", error.message);
-        process.exitCode = 1;
-    }
+    console.error("\nSomething went wrong!");
+    console.error(error.message);
+    console.error("Please check your command and try again.");
+
+    process.exitCode = 1;
+}
 }
