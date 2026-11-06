@@ -93,3 +93,14 @@ export async function addHistory(city) {
 
     await saveData(data);
 }
+
+// Change the temperature unit
+export async function updateTemperatureUnit(unit) {
+    const data = await loadData();
+
+    data.settings.temperatureUnit = unit;
+
+    await saveData(data);
+
+    return `Temperature unit changed to ${unit}.`;
+}

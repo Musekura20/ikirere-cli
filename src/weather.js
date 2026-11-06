@@ -30,7 +30,7 @@ async function getCoordinates(city) {
 }
 
 // Get weather using the city's coordinates
-export async function getWeather(city, days = 1) {
+export async function getWeather(city, days = 1, unit = "celsius") {
     if (!city) {
         throw new Error("Please provide a city name.");
     }
@@ -38,13 +38,14 @@ export async function getWeather(city, days = 1) {
     const location = await getCoordinates(city);
 
     const params = new URLSearchParams({
-        latitude: location.latitude,
-        longitude: location.longitude,
-        current: "temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m",
-        daily: "weather_code,temperature_2m_max,temperature_2m_min",
-        timezone: "auto",
-        forecast_days: String(days)
-    });
+    latitude: location.latitude,
+    longitude: location.longitude,
+    temperature_unit: unit,
+    current: "temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m",
+    daily: "weather_code,temperature_2m_max,temperature_2m_min",
+    timezone: "auto",
+    forecast_days: String(days)
+});
 
     const response = await fetch(
         `${WEATHER_URL}?${params}`,
@@ -56,11 +57,13 @@ export async function getWeather(city, days = 1) {
     }
 
     const data = await response.json();
+    
+    const unitSymbol = unit === "fahrenheit" ? "°F" : "°C";
 
     console.log(`\nWeather for ${location.name}, ${location.country}`);
     console.log("--------------------------------");
-    console.log(`Temperature: ${data.current.temperature_2m}°C`);
-    console.log(`Feels like: ${data.current.apparent_temperature}°C`);
+    console.log(`Temperature: ${data.current.temperature_2m}${unitSymbol}`);
+    console.log(`Feels like: ${data.current.apparent_temperature}${unitSymbol}`);
     console.log(`Humidity: ${data.current.relative_humidity_2m}%`);
     console.log(`Wind speed: ${data.current.wind_speed_10m} km/h`);
 
@@ -69,8 +72,8 @@ export async function getWeather(city, days = 1) {
     for (let i = 0; i < data.daily.time.length; i++) {
         console.log(
             `${data.daily.time[i]}: ` +
-            `${data.daily.temperature_2m_min[i]}°C - ` +
-            `${data.daily.temperature_2m_max[i]}°C`
+            `${data.daily.temperature_2m_min[i]}${unitSymbol} - ` +
+            `${data.daily.temperature_2m_max[i]}${unitSymbol}`
         );
     }
 }

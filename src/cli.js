@@ -6,7 +6,8 @@ import {
     loadData,
     addFavorite,
     removeFavorite,
-    addHistory
+    addHistory,
+    updateTemperatureUnit
 } from "./storage.js";
 
 function showHelp() {
@@ -61,12 +62,13 @@ export async function main() {
         }
 
         if (command === "weather") {
-            const city = positionals.slice(1).join(" ");
+    const city = positionals.slice(1).join(" ");
+    const data = await loadData();
 
-            await getWeather(city);
-            await addHistory(city);
-            return;
-        }
+    await getWeather(city, 1, data.settings.temperatureUnit);
+    await addHistory(city);
+    return;
+}
 
         if (command === "forecast") {
             const city = positionals.slice(1).join(" ");
@@ -76,7 +78,8 @@ export async function main() {
                 throw new Error("Days must be between 1 and 7.");
             }
 
-            await getWeather(city, days);
+            const data = await loadData();
+            await getWeather(city, days, data.settings.temperatureUnit);
             await addHistory(city);
             return;
         }
@@ -142,11 +145,24 @@ export async function main() {
         }
 
         if (command === "settings") {
-            const data = await loadData();
-            console.log("\nYour settings:");
-            console.log("Temperature unit:", data.settings.temperatureUnit);
-            return;
+    const unit = positionals[1];
+
+    if (unit) {
+        if (unit !== "celsius" && unit !== "fahrenheit") {
+            throw new Error("Choose celsius or fahrenheit.");
         }
+
+        console.log(await updateTemperatureUnit(unit));
+        return;
+    }
+
+    const data = await loadData();
+
+    console.log("\nYour settings:");
+    console.log("Temperature unit:", data.settings.temperatureUnit);
+
+    return;
+}
 
         throw new Error(`Unknown command: ${command}`);
 
