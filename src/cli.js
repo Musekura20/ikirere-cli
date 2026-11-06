@@ -2,6 +2,13 @@
 import { parseArgs } from "node:util";
 import { getWeather } from "./weather.js";
 
+import {
+    loadData,
+    addFavorite,
+    removeFavorite,
+    addHistory
+} from "./storage.js";
+
 function showHelp() {
     console.log(`
 IKIRERE - Your Weather Assistant
@@ -10,17 +17,17 @@ USAGE:
   ikirere <command> [arguments]
 
 COMMANDS:
-  weather <city>       Get current weather
-  forecast <city>      Get weather forecast
-  favorites add <city> Save a favorite city
-  favorites list       Show favorite cities
+  weather <city>          Get current weather
+  forecast <city>         Get weather forecast
+  favorites add <city>    Save a favorite city
+  favorites list          Show favorite cities
   favorites remove <city> Remove a favorite city
-  history              Show previous searches
-  settings             Show application settings
+  history                 Show previous searches
+  settings                Show application settings
 
 OPTIONS:
-  --help               Show help
-  --days <number>      Number of forecast days
+  --help                  Show help
+  --days <number>         Number of forecast days
 `);
 }
 
@@ -54,34 +61,90 @@ export async function main() {
         }
 
         if (command === "weather") {
-            await getWeather(positionals[1]);
+            const city = positionals.slice(1).join(" ");
+
+            await getWeather(city);
+            await addHistory(city);
             return;
         }
 
         if (command === "forecast") {
+            const city = positionals.slice(1).join(" ");
             const days = Number(values.days || 7);
 
             if (!Number.isInteger(days) || days < 1 || days > 7) {
                 throw new Error("Days must be between 1 and 7.");
             }
 
-            await getWeather(positionals[1], days);
+            await getWeather(city, days);
+            await addHistory(city);
             return;
         }
 
         if (command === "favorites") {
-            console.log("Favorites command selected.");
-            console.log("Action:", positionals[1]);
-            return;
+            const action = positionals[1];
+            const city = positionals.slice(2).join(" ");
+
+            if (action === "add") {
+                if (!city) {
+                    throw new Error("Please provide a city name.");
+                }
+
+                console.log(await addFavorite(city));
+                return;
+            }
+
+            if (action === "list") {
+                const data = await loadData();
+
+                console.log("\nYour favorite cities:");
+
+                if (data.favorites.length === 0) {
+                    console.log("No favorite cities saved yet.");
+                } else {
+                    data.favorites.forEach((city, index) => {
+                        console.log(`${index + 1}. ${city}`);
+                    });
+                }
+
+                return;
+            }
+
+            if (action === "remove") {
+                if (!city) {
+                    throw new Error("Please provide a city name.");
+                }
+
+                console.log(await removeFavorite(city));
+                return;
+            }
+
+            throw new Error("Use favorites add, list or remove.");
         }
 
         if (command === "history") {
-            console.log("History command selected.");
+            const data = await loadData();
+
+            console.log("\nYour search history:");
+
+            if (data.history.length === 0) {
+                console.log("No searches yet.");
+            } else {
+                data.history.forEach((item, index) => {
+                    console.log(
+                        `${index + 1}. ${item.city} - ` +
+                        `${new Date(item.date).toLocaleString()}`
+                    );
+                });
+            }
+
             return;
         }
 
         if (command === "settings") {
-            console.log("Settings command selected.");
+            const data = await loadData();
+            console.log("\nYour settings:");
+            console.log("Temperature unit:", data.settings.temperatureUnit);
             return;
         }
 
