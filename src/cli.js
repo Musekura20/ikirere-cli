@@ -1,5 +1,6 @@
 
 import { parseArgs } from "node:util";
+import { getWeather } from "./weather.js";
 
 function showHelp() {
     console.log(`
@@ -11,7 +12,7 @@ USAGE:
 COMMANDS:
   weather <city>       Get current weather
   forecast <city>      Get weather forecast
-  favorites add <city>    Save a favorite city
+  favorites add <city> Save a favorite city
   favorites list       Show favorite cities
   favorites remove <city> Remove a favorite city
   history              Show previous searches
@@ -23,7 +24,7 @@ OPTIONS:
 `);
 }
 
-export function main() {
+export async function main() {
     try {
         const { values, positionals } = parseArgs({
             args: process.argv.slice(2),
@@ -53,15 +54,18 @@ export function main() {
         }
 
         if (command === "weather") {
-            console.log("Weather command selected.");
-            console.log("City:", positionals[1]);
+            await getWeather(positionals[1]);
             return;
         }
 
         if (command === "forecast") {
-            console.log("Forecast command selected.");
-            console.log("City:", positionals[1]);
-            console.log("Days:", values.days || 7);
+            const days = Number(values.days || 7);
+
+            if (!Number.isInteger(days) || days < 1 || days > 7) {
+                throw new Error("Days must be between 1 and 7.");
+            }
+
+            await getWeather(positionals[1], days);
             return;
         }
 
@@ -81,8 +85,7 @@ export function main() {
             return;
         }
 
-        console.error("Unknown command:", command);
-        process.exitCode = 1;
+        throw new Error(`Unknown command: ${command}`);
 
     } catch (error) {
         console.error("Error:", error.message);
